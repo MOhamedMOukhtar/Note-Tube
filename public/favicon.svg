@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="150">
+        <rect
+          width="220"
+          height="100"
+          x="15"
+          y="30"
+          rx="20"
+          ry="20"
+          fill="#a435f0"
+        />
+        <text
+          x="17"
+          y="110"
+          font-size="65"
+          fill="white"
+          font-family="Impact, fantasy"
+          transform="scale(2.5,1) "
+        >
+          NT
+        </text>
+      </svg>
