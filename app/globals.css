@@ -70,8 +70,9 @@
 .progress-container {
   height: 5px;
   background: #c3c3c6;
-  cursor: pointer;
   margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease-in-out;
 }
 
 .progress-bar {

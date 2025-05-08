@@ -4,7 +4,7 @@ import YouTube from "react-youtube";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import CoPlaybackRate from "@/components/CoPlaybackRate";
-import BtnAddNote from "@/components/icons/IconAddNote";
+
 import CoPlayPause from "@/components/CoPlayPause";
 import CoBackward from "@/components/CoBackward";
 import { formatTime } from "@/utils/formatTime";
@@ -13,10 +13,12 @@ import CoForward from "@/components/CoForward";
 import CoVolume from "@/components/CoVolume";
 import CoFullScreen from "@/components/CoFullScreen";
 import CoExpandScreen from "@/components/CoExpandScreen";
+import CoAddNote from "@/components/CoAddNote";
 
 ////////////////////////////////////////////
 function CustomYouTubePlayer() {
   const playerRef = useRef(null);
+  const iframeRef = useRef(null);
   const textareaRef = useRef(null);
   const [volume, setVolume] = useState(50);
   const [duration, setDuration] = useState(0);
@@ -28,10 +30,26 @@ function CustomYouTubePlayer() {
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [PlaybackRate, setPlaybackRate] = useState(1);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isFullscreen, setIsFullScreen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHoverProgressBar, setIsHoverProgressBar] = useState(false);
 
   const videoId = "WgDedHNvr3E";
 
+  //handle is full screen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(document.fullscreenElement === iframeRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // handle hide dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (e.target.classList.contains("btnDropdown")) return;
@@ -42,6 +60,7 @@ function CustomYouTubePlayer() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  // update progress bar
   useEffect(() => {
     let intervalId;
     const updateProgress = () => {
@@ -72,7 +91,8 @@ function CustomYouTubePlayer() {
     playerRef.current = event.target;
     setDuration(event.target.getDuration());
     playerRef.current.setVolume(volume);
-    console.log(event.target);
+    // console.log(event.target);
+    iframeRef.current = event.target.getIframe();
   };
 
   // Handle Seek
@@ -121,9 +141,25 @@ function CustomYouTubePlayer() {
   };
 
   //active add note
-  function handleActiveAddNote() {
-    playerRef.current.pauseVideo();
-    setAddNote(true);
+  async function handleActiveAddNote() {
+    try {
+      // 1. Pause video and wait for completion
+      await playerRef.current.pauseVideo();
+
+      // 2. Show the textarea
+      setAddNote(true);
+
+      // 3. Focus after the component re-renders
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        textareaRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start", // or 'center', 'end', 'nearest'
+        });
+      }, 50);
+    } catch (error) {
+      console.error("Error activating note:", error);
+    }
   }
 
   // Add Note
@@ -165,8 +201,6 @@ function CustomYouTubePlayer() {
     if (playerRef.current) {
       const iframe = playerRef.current.getIframe();
 
-      console.log(iframe);
-
       // Standard fullscreen API
       if (iframe.requestFullscreen) {
         iframe.requestFullscreen();
@@ -203,13 +237,32 @@ function CustomYouTubePlayer() {
             className={`custom-controls ${isPlaying && !showDropdown ? "opacity-0" : "opacity-100"} `}
           >
             {/* Progress Bar */}
-            <div className="progress-container" onClick={handleSeek}>
+            <div
+              className="progress-container"
+              onMouseDown={(e) => setIsDragging(true)}
+              onMouseMove={(e) => {
+                if (isDragging) handleSeek(e);
+              }}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={(e) => {
+                setIsHoverProgressBar(false);
+                setIsDragging(false);
+              }}
+              onMouseOver={() => setIsHoverProgressBar(true)}
+              onClick={(e) => handleSeek(e)}
+              style={isHoverProgressBar ? { transform: "scaleY(2)" } : {}}
+              // style={
+              //   isHoverProgressBar
+              //     ? { height: "10px", marginBottom: "5px" }
+              //     : { height: "5px", marginBottom: "10px" }
+              // }
+            >
               <div
                 className={`progress-bar bg-[#a435f0]`}
                 style={{
                   width: `${(currentTime / duration) * 100}%`,
                 }}
-              ></div>
+              />
             </div>
 
             {/* Control Buttons */}
@@ -227,17 +280,7 @@ function CustomYouTubePlayer() {
                 <span className="time-display">
                   {formatTime(currentTime)}/{formatTime(duration)}
                 </span>
-                <button
-                  className="relative bottom-[1.5px] ml-1 cursor-pointer rounded-sm p-1 hover:bg-neutral-800"
-                  onClick={handleActiveAddNote}
-                >
-                  <div className="group relative">
-                    <span className="absolute right-1/2 bottom-7 w-20 translate-x-1/2 scale-90 rounded-sm border border-stone-500 bg-[#15161c] p-1 opacity-0 transition-all duration-100 ease-in group-hover:scale-100 group-hover:opacity-100">
-                      Add Note
-                    </span>
-                    <BtnAddNote />
-                  </div>
-                </button>
+                <CoAddNote onClick={handleActiveAddNote} />
               </div>
               <div className="flex gap-2 pr-2">
                 <CoVolume
@@ -247,9 +290,13 @@ function CustomYouTubePlayer() {
                   value={volume}
                 />
                 <CoFullScreen onClick={handleFullScreen} />
-                <div className="ml-1">
-                  <CoExpandScreen onClick={() => setIsExpanded(!isExpanded)} />
-                </div>
+                {!isFullscreen && (
+                  <div className="ml-1">
+                    <CoExpandScreen
+                      onClick={() => setIsExpanded(!isExpanded)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -269,6 +316,7 @@ function CustomYouTubePlayer() {
             className="m-auto mt-10 flex w-fit flex-col items-end gap-5"
           >
             <textarea
+              ref={textareaRef}
               cols={55}
               rows={4}
               onBlur={() => setIsTextareaFocused(false)}
