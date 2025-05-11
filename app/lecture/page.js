@@ -34,8 +34,24 @@ function CustomYouTubePlayer() {
   const [isFullscreen, setIsFullScreen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isHoverProgressBar, setIsHoverProgressBar] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(null);
+  const [screenHeight, setScreenHeight] = useState(null);
+  const [innerWidth, setInnerWidth] = useState(null);
+  const [innerHeight, setInnerHeight] = useState(null);
 
   const videoId = "WgDedHNvr3E";
+
+  // get screen width and height
+  useEffect(() => {
+    setScreenWidth(window.screen.width);
+    setScreenHeight(window.screen.availHeight);
+  }, []);
+
+  // get inner width and height
+  useEffect(() => {
+    setInnerWidth(window.innerWidth);
+    setInnerHeight(window.innerHeight);
+  }, []);
 
   //handle is full screen
   useEffect(() => {
@@ -77,8 +93,8 @@ function CustomYouTubePlayer() {
   }, [isPlaying, isTextareaFocused]);
 
   const opts = {
-    height: isExpanded ? "550" : "400",
     width: "100%",
+    height: "849",
     playerVars: {
       autoplay: 0,
       controls: 0,
@@ -251,11 +267,6 @@ function CustomYouTubePlayer() {
               onMouseOver={() => setIsHoverProgressBar(true)}
               onClick={(e) => handleSeek(e)}
               style={isHoverProgressBar ? { transform: "scaleY(2)" } : {}}
-              // style={
-              //   isHoverProgressBar
-              //     ? { height: "10px", marginBottom: "5px" }
-              //     : { height: "5px", marginBottom: "10px" }
-              // }
             >
               <div
                 className={`progress-bar bg-[#a435f0]`}

@@ -4,7 +4,7 @@ import CustomRange from "./ui/CustomRange";
 function CoVolume({ value, onChange, onClick, isMuted }) {
   return (
     <div className="right-controls group relative">
-      <div className="absolute right-3 bottom-6 hidden py-4 group-hover:block">
+      <div className="absolute -right-1 bottom-6 hidden p-4 group-hover:block">
         <CustomRange value={value} onChange={onChange} />
       </div>
       <button
